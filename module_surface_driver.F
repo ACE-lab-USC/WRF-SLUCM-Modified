@@ -12,6 +12,7 @@ CONTAINS
      &          ,chklowq,dt,dx,dx2d,area2d,dz8w,dzs,glw               &
      &          ,grdflx,gsw,swdown,gz1oz0,hfx                         &
      &          ,AH_istart,AH_jstart,AH_iend,AH_jend,AH_grid,AHFLUX   & !yun note: added by LUCY
+     &          ,LH_PROP,AH_FILE_INDEX                              & ! LH input
      &          ,ht,ifsnow,isfflx                                     &
      &          ,fractional_seaice,seaice_albedo_opt                  &
      &          ,seaice_albedo_default,seaice_thickness_opt,          &
@@ -203,7 +204,7 @@ CONTAINS
      &             SB_URB2D, SB1_URB2D, SB2_URB2D, SG_URB2D, SG1_URB2D, SG2_URB2D,  &
      &             RHO_URB2D, FLXTH_URB2D, FLXTHR_URB2D, HR_URB2D, FLXTHB_URB2D, HB_URB2D, FLXTHG_URB2D, HG_URB2D,   &        
      &             G0R_URB2D, G0B_URB2D, G0G_URB2D,  &
-     &             AKSR_URB2D, AKSB_URB2D, AKSG_URB2D,    &       !HaoHu modified according to UQ on 2025/01/09
+     &             AKSR_URB2D, AKSB_URB2D, AKSG_URB2D    &       !HaoHu modified according to UQ on 2025/01/09
 
      &          ,g_urb2d,rn_urb2d,ts_urb2d          & !H urban 
      &          ,frc_urb2d, utype_urb2d                               & !H urban
@@ -720,6 +721,10 @@ CONTAINS
    INTEGER,                             INTENT(IN   ) ::   AH_iend !yun note: added by LUCY
    INTEGER,                             INTENT(IN   ) ::   AH_jend !yun note: added by LUCY
    INTEGER,                             INTENT(IN   ) ::   AH_grid !yun note: added by LUCY
+! LH input: carry both fields along the existing Noah AH interface.
+   REAL, DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: LH_PROP
+   INTEGER, DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: AH_FILE_INDEX
+   INTEGER :: lh_input_mode, ah_input_mode
    REAL, DIMENSION( ims:ime, jms:jme ) , INTENT(INOUT)::   RMOL
    REAL, DIMENSION( ims:ime, jms:jme ) , INTENT(INOUT)::   PBLH
    REAL, DIMENSION( ims:ime, jms:jme ) , INTENT(INOUT)::   Q2
@@ -1506,6 +1511,16 @@ CONTAINS
 !
 !------------------------------------------------------------------
 ! Initialize local variables
+! LH input: reject unsupported configurations rather than silently ignoring files.
+  CALL nl_get_LH_choose(AH_grid, lh_input_mode)
+  CALL nl_get_AH_choose(AH_grid, ah_input_mode)
+  IF (lh_input_mode < 0 .OR. lh_input_mode > 1) &
+    CALL wrf_error_fatal('LH_choose must be 0 (uniform) or 1 (LH_prop files)')
+  IF (lh_input_mode == 1) THEN
+    IF (AH_grid /= 2 .OR. ah_input_mode /= 1 .OR. sf_surface_physics /= LSMSCHEME .OR. &
+        sf_surface_mosaic /= 0 .OR. sf_urban_physics /= 1 .OR. isfflx == 0 .OR. sf_sfclay_physics == 0) &
+      CALL wrf_error_fatal('LH_choose=1 requires d02, AH_choose=1, Noah, no mosaic, SLUCM and surface fluxes')
+  END IF
   q_ref2m = 0.0
 !------------------------------------------------------------------
 !
@@ -2863,6 +2878,7 @@ CONTAINS
                CALL lsm(dz8w,qv_curr,p8w,t_phy,tsk,                 &
                 hfx,                                            &
                 AH_istart,AH_jstart,AH_iend,AH_jend,AH_grid,AHFLUX, & !yun note: added by LUCY
+                LH_PROP,AH_FILE_INDEX,curr_secs,                  & ! LH input
                 qfx,lh,grdflx,qgh,gsw,swdown,swddir,swddif,     &
                 glw,smstav,smstot,    &
                 sfcrunoff,udrunoff,ivgtyp,isltyp,isurban,isice,vegfra,        &

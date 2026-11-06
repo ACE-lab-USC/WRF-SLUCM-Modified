@@ -1998,6 +1998,9 @@ state    real  THC              ij      misc        1         -      r        "T
 state    real  HFX              ij      misc        1         -      rh       "HFX"                   "UPWARD HEAT FLUX AT THE SURFACE"              "W m-2"      
 state    real  QFX              ij      misc        1         -      rh       "QFX"                   "UPWARD MOISTURE FLUX AT THE SURFACE"          "kg m-2 s-1"      
 state    real  AHFLUX           ij      misc        1         -      rh       "AHFLUX"                   "AHFLUX"              "W m-2" #yun note: added by LUCY
+# LH input: preserve the AH field; cache the paired hourly file index per grid cell.
+state    real     LH_PROP        ij      misc        1         -      rh       "LH_PROP" "ANTHROPOGENIC LATENT HEAT FRACTION" "1"
+state    integer  AH_FILE_INDEX  ij      misc        1         -      -        "AH_FILE_INDEX" "LOADED AH AND LH FILE INDEX" "1"
 state    real  LH               ij      misc        1         -      rh       "LH"                    "LATENT HEAT FLUX AT THE SURFACE"              "W m-2"
 state    real  ACHFX            ij      misc        1         -      rhdu     "ACHFX"                 "ACCUMULATED UPWARD HEAT FLUX AT THE SURFACE"  "J m-2"
 #BSINGH - Added WSTAR for CuP scheme
@@ -2495,6 +2498,7 @@ rconfig   real    naer                    namelist,physics      max_domains    1
 #++ yun note: added by LUCY, start
 rconfig   integer   AH_choose             namelist,dynamics   max_domains    0       rh    "AH_choose"              "AH_choose"      ""
 rconfig   real      AHratio               namelist,dynamics   max_domains    1.0     rh    "AHratio"              "AHratio"      ""
+rconfig   integer   LH_choose             namelist,dynamics   max_domains    0       rh    "LH_choose" "0: uniform 1-AHratio; 1: LH_prop files" ""
 rconfig   real      AH_istart             namelist,dynamics   max_domains    1.0     rh    "AH_istart"            "AH_istart"      ""
 rconfig   real      AH_jstart             namelist,dynamics   max_domains    1.0     rh    "AH_jstart"            "AH_jstart"      ""
 rconfig   real      AH_iend               namelist,dynamics   max_domains    1.0     rh    "AH_iend"              "AH_iend"      ""

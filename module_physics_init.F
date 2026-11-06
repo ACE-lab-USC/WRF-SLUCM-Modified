@@ -80,6 +80,7 @@ CONTAINS
                          alevsiz, no_src_types,                  &
                          TMN,XLAND,ZNT,Z0,UST,MOL,PBLH,TKE_PBL,  &
                          EXCH_H,THC,SNOWC,MAVAIL,HFX,QFX,RAINBL, &
+                         AHFLUX,LH_PROP,AH_FILE_INDEX,           & ! LH input
                          TSLB,ZS,DZS,num_soil_layers,warm_rain,  &
                          adv_moist_cond,is_CAMMGMP_used,         &
                          APR_GR,APR_W,APR_MC,APR_ST,APR_AS,      &
@@ -502,6 +503,9 @@ CONTAINS
    REAL,     DIMENSION( ims:ime , jms:jme ) , INTENT(INOUT) ::         &
              XLAND,ZNT,Z0,UST,MOL,LU_INDEX,                         &
              PBLH,THC,MAVAIL,HFX,QFX,RAINBL
+! LH input: initialized on cold start; file cache is reset on every start.
+   REAL, DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: AHFLUX,LH_PROP
+   INTEGER, DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: AH_FILE_INDEX
    INTEGER , INTENT(INOUT)  :: landuse_ISICE, landuse_LUCATS
    INTEGER , INTENT(INOUT)  :: landuse_LUSEAS, landuse_ISN
    REAL    , INTENT(INOUT)  , DIMENSION( : ) :: lu_state
@@ -1181,6 +1185,13 @@ CHARACTER(LEN=8) :: name
 #endif
    CALL nl_set_icloud_cu ( id , icloud_cu )
 
+! LH input: force a paired reload at the current hour, including after restart.
+   DO j=jts,jtf
+   DO i=its,itf
+      AH_FILE_INDEX(i,j)=-1
+   ENDDO
+   ENDDO
+
   IF(.not.restart)THEN !{
 !-- initialize common variables
      !BSINGH - When all the CAM parameterizations are not executed in WRF,
@@ -1201,6 +1212,9 @@ CHARACTER(LEN=8) :: name
       MOL(i,j)=0.0
       PBLH(i,j)=0.0
       HFX(i,j)=0.
+! LH input: deterministic defaults before the first Noah call.
+      AHFLUX(i,j)=0.
+      LH_PROP(i,j)=1.0-config_flags%AHratio
       QFX(i,j)=0.
       RAINBL(i,j)=0.
       RAINNCV(i,j)=0.

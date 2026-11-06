@@ -36,7 +36,9 @@ CONTAINS
 ! Urban related variable are added to arguments - urban
 !----------------------------------------------------------------
    SUBROUTINE lsm(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
-                  HFX,AH_istart,AH_jstart,AH_iend,AH_jend,AH_grid,AHFLUX,QFX,LH,GRDFLX, QGH,GSW,SWDOWN,SWDDIR,SWDDIF,& !yun note: changed by LUCY
+                  HFX,AH_istart,AH_jstart,AH_iend,AH_jend,AH_grid,AHFLUX, & !yun note: changed by LUCY
+                  LH_PROP,AH_FILE_INDEX,AH_CURR_SECS,                  & ! LH input
+                  QFX,LH,GRDFLX,QGH,GSW,SWDOWN,SWDDIR,SWDDIF,          &
                   GLW,SMSTAV,SMSTOT, &
                   SFCRUNOFF, UDRUNOFF,IVGTYP,ISLTYP,ISURBAN,ISICE,VEGFRA,    &
                   ALBEDO,ALBBCK,ZNT,Z0,TMN,XLAND,XICE,EMISS,EMBCK,   &
@@ -138,6 +140,7 @@ CONTAINS
 
 !----------------------------------------------------------------
     USE module_configure,  only: grid_config_rec_type !yun note: added by LUCY
+    USE, INTRINSIC :: ieee_arithmetic, ONLY: ieee_is_finite
 
     IMPLICIT NONE
 !----------------------------------------------------------------
@@ -352,6 +355,10 @@ CONTAINS
    INTEGER, INTENT(IN)       ::     AH_iend    !yun note: added by LUCY
    INTEGER, INTENT(IN)       ::     AH_jend    !yun note: added by LUCY
    INTEGER, INTENT(IN)       ::     AH_grid    !yun note: added by LUCY
+! LH input: persistent fields; the clock is optional for other callers.
+   REAL, DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: LH_PROP
+   INTEGER, DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: AH_FILE_INDEX
+   REAL, OPTIONAL, INTENT(IN) :: AH_CURR_SECS
 
    REAL,    DIMENSION( ims:ime, jms:jme )                     , &
             INTENT(INOUT)    ::                            TSK, & !was TGB (temperature)
@@ -760,77 +767,75 @@ CONTAINS
    REAL,OPTIONAL,INTENT(IN),DIMENSION( ims:ime, jms:jme )       :: IRR_CHAN
    REAL       ::  IRRIGATION_CHANNEL
 
-!++ yun note: added by LUCY, start
-!Local
-  integer   :: xmax, ymax,itf,jtf
-  INTEGER   :: AH_choose
-  real      :: AHratio,AHhuang
-  real, allocatable :: Renfluxin(:,:)
+!++ LH input: extend the existing LUCY AH reader without moving the physics path.
+  INTEGER :: xmax, ymax, itf, jtf, LH_xmax, LH_ymax
+  INTEGER :: AH_choose, LH_choose, timeth
+  REAL :: AHratio, AHratio_cell, AHhuang
+  REAL, ALLOCATABLE :: Renfluxin(:,:), LHpropin(:,:)
+  CHARACTER(LEN=4) :: nameth
+  CHARACTER(LEN=512) :: filename, LH_filename
+  LOGICAL :: need_input
 
+  CALL nl_get_AH_choose(AH_grid, AH_choose)
+  CALL nl_get_AHratio(AH_grid, AHratio)
+  CALL nl_get_LH_choose(AH_grid, LH_choose)
+  itf = MIN(ite,ide-1)
+  jtf = MIN(jte,jde-1)
 
-  ! local varibal
-  integer   ::Fluxsteps,trace_times,timeth,hourmod
-  character(len=4) :: nameth,addpp
-  character(len=4) filename
-  !tracer_time=desired_spin-up_time(in seconds)/time_step(in seconds)
-
-!Yun Li :20220919+
-  !huangbei
-! CALL nl_get_AH_choose ( 1, AH_choose )
-! CALL nl_get_AHratio ( 1, AHratio )
-  CALL nl_get_AH_choose ( AH_grid, AH_choose )
-  CALL nl_get_AHratio ( AH_grid, AHratio )
-!Yun Li :20220919-
-
-
-  print*,'ITIMESTEP',ITIMESTEP
-     trace_times = 3600
-     addpp ='flux'
-     Fluxsteps=trace_times/dt
-     hourmod=Mod(ITIMESTEP,Fluxsteps)
- 
-!Yun Li :20220919+
- write(0,*) "Yun added in LUCY, AH_grid=",AH_grid,", AH_choose=",AH_choose,", hourmod=",hourmod
-!Yun Li :20220919-
-
-   IF( AH_grid  .eq. 2 )THEN
-     IF( AH_choose .eq. 1 )THEN
-
-       IF( hourmod .eq. 1 )THEN  !.or. ITIMESTEP .eq. 1
-        write(0,*) "Yun added in LUCY, in IF statement"
-        timeth=INT(ITIMESTEP/Fluxsteps)
-        write(0,*) "Yun added in LUCY, timeth:",timeth
-        print*,'timeth',timeth
-
-        write(nameth,"(I4.4)") timeth
-        filename = trim(nameth)
-        write(0,*) "Yun added in LUCY, nameth: ",nameth,", filename: ",filename
-        print*,'nameth,filename:',nameth,filename
-        call Readflux( filename,xmax,ymax,Renfluxin )
-        write(0,*) "Yun added in LUCY, passed01",xmax,ymax,Renfluxin(1,1)
-
-
-        !IF( xmax == min(jde-1,jte) .and. ymax==min(ide-1,ite) ) THEN
-        ! print*, 'Yes! the matrix size of input_flux is same with WRFijk'
-        !ELSE
-        ! print*, 'Warning,Please check the flux in file! the matrix size  is different with WRFijk'
-        !ENDIF
-
-        itf=min0(ite,ide-1)
-        jtf=min0(jte,jde-1)
-
-        do i = its,itf
-           do j = jts,jtf
-            AHFLUX(I,J)=Renfluxin(J,I)
-          end do
-        end do
-        write(0,*) "Yun added in LUCY, passed02",AHFLUX(its,jts)
-       ENDIF
-     ENDIF
-   ENDIF
-!-- yun note: added by LUCY, end
-
-        write(0,*) "Yun added in LUCY, passed03"   
+  IF (AH_grid == 2 .AND. AH_choose == 1) THEN
+    IF (.NOT. PRESENT(AH_CURR_SECS)) THEN
+      FATAL_ERROR('AH/LH input requires elapsed simulation seconds')
+    END IF
+    IF (.NOT. ieee_is_finite(AH_CURR_SECS)) THEN
+      FATAL_ERROR('AH/LH input received a non-finite simulation time')
+    END IF
+    IF (AH_CURR_SECS < 0.0 .OR. AH_CURR_SECS >= 36000000.0) THEN
+      FATAL_ERROR('AH/LH input time must be in [0,36000000) seconds (files 0000..9999)')
+    END IF
+    ! The model clock is relative to the original simulation start, also on restart.
+    timeth = FLOOR(REAL(AH_CURR_SECS,KIND=8)/3600.0_8)
+    need_input = .FALSE.
+    IF (its <= itf .AND. jts <= jtf) THEN
+      need_input = ANY(AH_FILE_INDEX(its:itf,jts:jtf) /= timeth)
+    END IF
+    IF (need_input) THEN
+      WRITE(nameth,'(I4.4)') timeth
+      filename = 'AH_total/' // nameth
+      LH_filename = 'LH_prop/' // nameth
+      ! Existing reader is inside a tile loop. Serialize paired file I/O for OpenMP.
+      !$OMP CRITICAL (wrf_ah_lh_input)
+      CALL Readflux(TRIM(filename),xmax,ymax,Renfluxin,jde-jds,ide-ids)
+      IF (LH_choose == 1) THEN
+        CALL Readflux(TRIM(LH_filename),LH_xmax,LH_ymax,LHpropin,jde-jds,ide-ids)
+        IF (ANY(LHpropin < 0.0) .OR. ANY(LHpropin > 1.0)) THEN
+          FATAL_ERROR('LH fraction outside [0,1] in '//TRIM(LH_filename))
+        END IF
+      ELSE
+        IF (.NOT. ieee_is_finite(AHratio)) THEN
+          FATAL_ERROR('AHratio must be finite')
+        END IF
+        IF (AHratio < 0.0 .OR. AHratio > 1.0) THEN
+          FATAL_ERROR('AHratio is a sensible heat fraction and must be in [0,1]')
+        END IF
+      END IF
+      !$OMP END CRITICAL (wrf_ah_lh_input)
+      ! Commit only after both inputs have passed validation. Preserve (J,I) order.
+      DO j = jts,jtf
+        DO i = its,itf
+          AHFLUX(i,j) = Renfluxin(j-jds+1,i-ids+1)
+          IF (LH_choose == 1) THEN
+            LH_PROP(i,j) = LHpropin(j-jds+1,i-ids+1)
+          ELSE
+            LH_PROP(i,j) = 1.0-AHratio
+          END IF
+          AH_FILE_INDEX(i,j) = timeth
+        END DO
+      END DO
+      DEALLOCATE(Renfluxin)
+      IF (ALLOCATED(LHpropin)) DEALLOCATE(LHpropin)
+    END IF
+  END IF
+!-- LH input
 
    IRRIGATION_CHANNEL =0.0
    HFX_PHY = 0.0   ! initialize
@@ -1548,14 +1553,13 @@ CONTAINS
 ! Call urban
 !++ yun note: added by LUCY, start
             !
-            IF( AH_grid  .eq. 2 )THEN
-            !    AHhuang = 50
+            ! LH input: AHratio remains the namelist sensible fraction.
+            AHhuang = 0.0
+            AHratio_cell = AHratio
+            IF (AH_grid == 2 .AND. AH_choose == 1) THEN
                 AHhuang = AHFLUX(I,J)
-            ELSE
-                AHhuang = 0.0
+                AHratio_cell = 1.0-LH_PROP(I,J)
             ENDIF
-
-            ! AHhuang = 0.0
 !-- yun note: added by LUCY, end
 
 
@@ -1563,7 +1567,7 @@ CONTAINS
 
 
             CALL cal_mon_day(julian,julyr,jmonth,jday)
-            CALL urban(LSOLAR_URB,AHhuang,AHratio,                      & ! I !yun note: changed by LUCY
+            CALL urban(LSOLAR_URB,AHhuang,AHratio_cell,                 & ! LH input: per-cell sensible fraction
                        num_roof_layers,num_wall_layers,num_road_layers, & ! C
                        DZR,DZB,DZG,                                     & ! C
                        UTYPE_URB,TA_URB,QA_URB,UA_URB,U1_URB,V1_URB,SSG_URB, & ! I
@@ -1717,7 +1721,7 @@ CONTAINS
             SG2_URB2D(I,J)   =  SG2_URB
             RHO_URB2D(I,J)   =  RHO_URB
             FLXTH_URB2D(I,J)   =  FLXTH_URB
-            FLXTHR_URB2D(I,J)   =  RLXTHR_URB
+            FLXTHR_URB2D(I,J)   =  FLXTHR_URB
             HR_URB2D(I,J)   =  HR_URB
             FLXTHB_URB2D(I,J)   =  FLXTHB_URB
             HB_URB2D(I,J)   =  HB_URB
@@ -1975,20 +1979,59 @@ CONTAINS
 !------------------------------------------------------
 
 !++ yun note: added by LUCY, start
-subroutine Readflux(filename, xmax,ymax,tskinput )
+! LH input: same text layout for AH and LH; validate before assigning model fields.
+subroutine Readflux(filename, xmax, ymax, tskinput, expected_ny, expected_nx)
+         USE, INTRINSIC :: ieee_arithmetic, ONLY: ieee_is_finite, ieee_value, ieee_quiet_nan
          implicit none
-         character(len=4) filename
-         integer  xmax, ymax, i,j
-         real, allocatable :: tskinput(:,:)
-         ! input sounding data
-         open(unit=101,file=filename,form='formatted',status='old')
-         rewind(101)
-         read(101,*) xmax, ymax
-         allocate(tskinput(xmax,ymax))
-         do i=1,xmax
-         read(101,*) tskinput(i,:)
+         character(len=*), intent(in) :: filename
+         integer, intent(out) :: xmax, ymax
+         integer, intent(in) :: expected_ny, expected_nx
+         real, allocatable, intent(out) :: tskinput(:,:)
+         integer :: iu, ios, row
+         character(len=512) :: io_message
+         character(len=1200) :: error_message
+
+         open(newunit=iu,file=filename,form='formatted',status='old', &
+              action='read',iostat=ios,iomsg=io_message)
+         if (ios /= 0) then
+           FATAL_ERROR('Cannot open AH/LH input '//trim(filename)//': '//trim(io_message))
+         end if
+         xmax = 0
+         ymax = 0
+         read(iu,*,iostat=ios,iomsg=io_message) xmax, ymax
+         if (ios /= 0) then
+           close(iu)
+           FATAL_ERROR('Cannot read AH/LH dimensions '//trim(filename)//': '//trim(io_message))
+         end if
+         if (xmax /= expected_ny .or. ymax /= expected_nx .or. xmax <= 0 .or. ymax <= 0) then
+           write(error_message,*) 'AH/LH dimensions (Ny,Nx): ',trim(filename), &
+             ' got ',xmax,ymax,' expected ',expected_ny,expected_nx
+           close(iu)
+           FATAL_ERROR(trim(error_message))
+         end if
+         allocate(tskinput(xmax,ymax),stat=ios)
+         if (ios /= 0) then
+           close(iu)
+           FATAL_ERROR('Cannot allocate AH/LH input '//trim(filename))
+         end if
+         ! Null list-directed entries must not silently leave uninitialized values.
+         tskinput = ieee_value(0.0,ieee_quiet_nan)
+         do row=1,xmax
+           read(iu,*,iostat=ios,iomsg=io_message) tskinput(row,:)
+           if (ios /= 0) then
+             write(error_message,*) 'Cannot read AH/LH input ',trim(filename), &
+               ' row ',row,': ',trim(io_message)
+             close(iu)
+             FATAL_ERROR(trim(error_message))
+           end if
          end do
-         close(101)
+         close(iu,iostat=ios,iomsg=io_message)
+         if (ios /= 0) then
+           FATAL_ERROR('Cannot close AH/LH input '//trim(filename)//': '//trim(io_message))
+         end if
+         if (.not. all(ieee_is_finite(tskinput))) then
+           FATAL_ERROR('Non-finite value in AH/LH input '//trim(filename))
+         end if
 end subroutine Readflux
 !-- yun note: added by LUCY, end
 
@@ -4294,7 +4337,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                   SG2_URB2D(I,J)   =  SG2_URB
                   RHO_URB2D(I,J)   =  RHO_URB
                   FLXTH_URB2D(I,J)   =  FLXTH_URB
-                  FLXTHR_URB2D(I,J)   =  RLXTHR_URB
+                  FLXTHR_URB2D(I,J)   =  FLXTHR_URB
                   HR_URB2D(I,J)   =  HR_URB
                   FLXTHB_URB2D(I,J)   =  FLXTHB_URB
                   HB_URB2D(I,J)   =  HB_URB
@@ -5224,7 +5267,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                   SG2_URB2D(I,J)   =  SG2_URB
                   RHO_URB2D(I,J)   =  RHO_URB
                   FLXTH_URB2D(I,J)   =  FLXTH_URB
-                  FLXTHR_URB2D(I,J)   =  RLXTHR_URB
+                  FLXTHR_URB2D(I,J)   =  FLXTHR_URB
                   HR_URB2D(I,J)   =  HR_URB
                   FLXTHB_URB2D(I,J)   =  FLXTHB_URB
                   HB_URB2D(I,J)   =  HB_URB

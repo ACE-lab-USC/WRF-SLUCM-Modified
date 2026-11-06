@@ -311,10 +311,10 @@ USE module_model_constants, ONLY :  piconst
                     TR, TB, TG, TC, QC, UC,                           & ! H
                     TRL,TBL,TGL,                                      & ! H
                     XXXR, XXXB, XXXG, XXXC,                           & ! H
-                    TS,QS,SH,LH,LNET, RR, RB, RB1, RB2, VFWS, VFWG, VFWW, &
+                    TS,QS,SH,LH,LNET, RR, RB, RB1, RB2, VFWS, VFWG, VFWW,     &
                     VFGS, VFGW, RG, RG1, RG2, SNET, SR,        &
-                    SB, SB1, SB2, SG, SG1, SG2, RHO, FLXTH, FLXTHR,        &
-                    HR, FLXTHB, HB, FLXTHG, HG, G0R, G0B, G0G, AKSR, AKSB, AKSG, LH_KINEMATIC,  &                       & ! O  !HaoHu modified according to UQ on 2025/01/09
+                    SB, SB1, SB2, SG, SG1, SG2, RHO, FLXTH, FLXTHR,  &
+                    HR, FLXTHB, HB, FLXTHG, HG, G0R, G0B, G0G, AKSR, AKSB, AKSG, LH_KINEMATIC,  &   ! O  !HaoHu modified according to UQ on 2025/01/09
                     SW,ALB,LW,G,RN,PSIM,PSIH,                         & ! O
                     GZ1OZ0,                                           & ! O
                     CMR_URB,CHR_URB,CMC_URB,CHC_URB,                  & ! I/O
@@ -632,8 +632,8 @@ USE module_model_constants, ONLY :  piconst
    integer,parameter ::  IMPB  = 2      
    integer,parameter ::  IMPG  = 3    
 
-   SHADOW = .false.
-!   SHADOW = .true.
+!   SHADOW = .false.
+   SHADOW = .true.
 
    IF (distributed_aerodynamics_option .and. groption == 1) THEN
      FATAL_ERROR("slucm_distributed_drag is not compatible with groption")
@@ -816,7 +816,7 @@ USE module_model_constants, ONLY :  piconst
 
 
 ! Huang, 2007/01/17, cal. ah
-   if(ahoption==1) AH=AHhuang*AHratio !yun note: changed by LUCY
+   if(ahoption==1  .OR. ahoption==3 .OR. ahoption==2) AH=AHhuang*AHratio !yun note: changed by LUCY
 
 ! Miao, 2007/01/17, cal. ah
    !if(ahoption==1) AH=AH*ahdiuprf(tloc) !yun note: comment out by LUCY
@@ -2623,16 +2623,16 @@ ENDIF
                              XXXR_URB2D,XXXB_URB2D,XXXG_URB2D,XXXC_URB2D,  & ! inout
                              TR_URB2D,TB_URB2D,TG_URB2D,TC_URB2D,QC_URB2D, & ! inout
                              TRL_URB3D,TBL_URB3D,TGL_URB3D,                & ! inout
-                             SH_URB2D,LH_URB2D,   &
+                             SH_URB2D,LH_URB2D,                            &
                              
-                              LNET_URB2D,                                &   !HaoHu modified according to UQ on 2025/01/09
-                              RR_URB2D,RB_URB2D,RB1_URB2D,RB2_URB2D,           &  
-                              VFWS_URB2D, VFWG_URB2D, VFWW_URB2D, VFGS_URB2D, VFGW_URB2D,  &
-                              RG_URB2D, RG1_URB2D, RG2_URB2D, SNET_URB2D, SR_URB2D,   &
+                              LNET_URB2D,                                 & !HaoHu modified according to UQ on 2025/01/09
+                              RR_URB2D,RB_URB2D,RB1_URB2D,RB2_URB2D,        &    
+                              VFWS_URB2D, VFWG_URB2D, VFWW_URB2D, VFGS_URB2D, VFGW_URB2D, &
+                              RG_URB2D, RG1_URB2D, RG2_URB2D, SNET_URB2D, SR_URB2D,       &
                               SB_URB2D, SB1_URB2D, SB2_URB2D, SG_URB2D, SG1_URB2D, SG2_URB2D,  &
-                              RHO_URB2D, FLXTH_URB2D, FLXTHR_URB2D, HR_URB2D, FLXTHB_URB2D, HB_URB2D, FLXTHG_URB2D, HG_URB2D,   &        
-                              G0R_URB2D, G0B_URB2D, G0G_URB2D,  &
-                              AKSR_URB2D, AKSB_URB2D, AKSG_URB2D,    &       !HaoHu modified according to UQ on 2025/01/09
+                              RHO_URB2D, FLXTH_URB2D, FLXTHR_URB2D, HR_URB2D, FLXTHB_URB2D, HB_URB2D, FLXTHG_URB2D, HG_URB2D,      &     
+                              G0R_URB2D, G0B_URB2D, G0G_URB2D,   &
+                              AKSR_URB2D, AKSB_URB2D, AKSG_URB2D,        &    !HaoHu modified according to UQ on 2025/01/09
 
                                        
                              G_URB2D,RN_URB2D,    & ! inout  !HaoHu modified according to UQ on 2025/01/09
@@ -2728,7 +2728,20 @@ ENDIF
 
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: SH_URB2D
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: LH_URB2D
-   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: LNET_URB2D !HaoHu modified according to UQ on 2025/01/09
+
+
+!HaoHu modified according to UQ on 2025/01/09
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: LNET_URB2D                                                    
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: RR_URB2D,RB_URB2D,RB1_URB2D,RB2_URB2D      
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: VFWS_URB2D, VFWG_URB2D, VFWW_URB2D, VFGS_URB2D, VFGW_URB2D
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: RG_URB2D, RG1_URB2D, RG2_URB2D, SNET_URB2D, SR_URB2D
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: SB_URB2D, SB1_URB2D, SB2_URB2D, SG_URB2D, SG1_URB2D, SG2_URB2D
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: RHO_URB2D, FLXTH_URB2D, FLXTHR_URB2D, HR_URB2D, FLXTHB_URB2D, HB_URB2D, FLXTHG_URB2D, HG_URB2D       
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: G0R_URB2D, G0B_URB2D, G0G_URB2D
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: AKSR_URB2D, AKSB_URB2D, AKSG_URB2D 
+!HaoHu modified according to UQ on 2025/01/09 
+
+
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: G_URB2D
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: RN_URB2D
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: TS_URB2D
@@ -2812,7 +2825,48 @@ ENDIF
 
       SH_URB2D(I,J)=0.
       LH_URB2D(I,J)=0.
-      LNET_URB2D(I,J)=0.  !HaoHu modified according to UQ on 2025/01/09
+
+
+
+      LNET_URB2D(I,J)    = 0. !HaoHu modified according to UQ on 2025/01/09
+      RR_URB2D(I,J)   =  0.
+      RB_URB2D(I,J)   =  0.
+      RB1_URB2D(I,J)   =  0.
+      RB2_URB2D(I,J)   =  0.
+      VFWS_URB2D(I,J)   =  0.
+      VFWG_URB2D(I,J)   =  0.
+      VFWW_URB2D(I,J)   =  0.
+      VFGS_URB2D(I,J)   =  0.
+      VFGW_URB2D(I,J)   =  0.
+      RG_URB2D(I,J)   = 0. 
+      RG1_URB2D(I,J)   =  0.
+      RG2_URB2D(I,J)   =  0.
+      SNET_URB2D(I,J)   =  0.
+      SR_URB2D(I,J)   =  0.
+      SB_URB2D(I,J)   =  0.
+      SB1_URB2D(I,J)   = 0.
+      SB2_URB2D(I,J)   =  0.
+      SG_URB2D(I,J)   =  0.
+      SG1_URB2D(I,J)   =  0.
+      SG2_URB2D(I,J)   =  0.
+      RHO_URB2D(I,J)   =  0.
+      FLXTH_URB2D(I,J)   =  0.
+      FLXTHR_URB2D(I,J)   =  0.
+      HR_URB2D(I,J)   =  0.
+      FLXTHB_URB2D(I,J)   =  0.
+      HB_URB2D(I,J)   =  0.
+      FLXTHG_URB2D(I,J)   =  0.
+      HG_URB2D(I,J)   =  0.
+      G0R_URB2D(I,J)   =  0.
+      G0B_URB2D(I,J)   =  0.
+      G0G_URB2D(I,J)   =  0.
+      AKSR_URB2D(I,J)   =  0.
+      AKSB_URB2D(I,J)   =  0.
+      AKSG_URB2D(I,J)   =  0. !HaoHu modified according to UQ on 2025/01/09
+
+
+
+
       G_URB2D(I,J)=0.
       RN_URB2D(I,J)=0.
       

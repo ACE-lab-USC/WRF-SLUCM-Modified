@@ -60488,7 +60488,7 @@ has_urban_physics : &
             SG2_URB2D(I,J)   =  SG2_URB
             RHO_URB2D(I,J)   =  RHO_URB
             FLXTH_URB2D(I,J)   =  FLXTH_URB
-            FLXTHR_URB2D(I,J)   =  RLXTHR_URB
+            FLXTHR_URB2D(I,J)   =  FLXTHR_URB
             HR_URB2D(I,J)   =  HR_URB
             FLXTHB_URB2D(I,J)   =  FLXTHB_URB
             HB_URB2D(I,J)   =  HB_URB

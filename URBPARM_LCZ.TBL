@@ -20,26 +20,26 @@ Number of urban categories: 11
 # ZR:  Roof level (building height)  [ m ]
 #      (sf_urban_physics=1)
 
-ZR: 37.5, 11.89, 5.17, 37.5, 6.10, 5.34, 3.0, 5.82, 6.5, 10., 10.
+ZR: 37.5, 17.5, 6.5, 37.5, 17.5, 6.5, 3., 6.5, 6.5, 10., 10.
 
 #
 # SIGMA_ZED:  Standard Deviation of roof height  [ m ]
 #      (sf_urban_physics=1)
 
-SIGMA_ZED: 4.0,  15.34,  2.61, 1.0, 2.42, 2.49, 1.0, 4.29, 1.0, 1.0, 1.0
+SIGMA_ZED: 4.0,  3.0,  1.0, 1., 1., 1., 1., 1., 1., 1., 1.
 
 #
 # ROOF_WIDTH:  Roof (i.e., building) width  [ m ]
 #      (sf_urban_physics=1)
 
-ROOF_WIDTH: 16.52, 8.14, 5.27, 42.86, 5.91, 5.78, 25.0, 7.37, 43.33, 23.8, 5.0
+ROOF_WIDTH: 22.2, 22., 9.6, 42.86, 26.25, 13., 25., 28.9, 43.33, 23.8, 5.
 
 #
 # ROAD_WIDTH:  road width  [ m ]
 #      (sf_urban_physics=1)
 #
 
-ROAD_WIDTH: 15.71, 8.48, 9.32, 50.0, 30.60, 7.07, 3.33, 19.24, 43.3, 28.6, 100.0
+ROAD_WIDTH: 20., 14., 5.2, 50.0, 35.0, 13.0, 3.33, 32.5, 43.3, 28.6, 100.0
 
 #
 # AH:  Anthropogenic heat [ W m{-2} ]
@@ -70,7 +70,7 @@ AKANDA_URBAN:  1.29 1.29 1.29 1.29 1.29 1.29 1.29 1.29 1.29 1.29 1.29
 #      (sf_urban_physics=1)
 
 
-DDZR:  0.03, 0.03, 0.03, 0.03
+DDZR:  0.05, 0.05, 0.05, 0.05
 
 #
 # DDZB:  Thickness of each building wall layer [ m ]
@@ -130,7 +130,7 @@ TS_SCHEME: 1
 #      (sf_urban_physics=1)
 #
 
-AHOPTION: 0
+AHOPTION: 1
 
 #
 # Anthropogenic Heating diurnal profile.
@@ -148,7 +148,7 @@ AHDIUPRF: 0.16 0.13 0.08 0.07 0.08 0.26 0.67 0.99 0.89 0.79 0.74 0.73 0.75 0.76 
 #      (sf_urban_physics=1)
 #
 
-ALHOPTION: 0
+ALHOPTION: 1
 
 #
 # Anthropogenic latent heat: seasonal coefficient of daily maximum values 
@@ -215,13 +215,13 @@ GROPTION: 0
 #  (sf_urban_physics=1) 
 #
 
-FGR: 0.0
+FGR: 0
 
 #
 # DZGR:  Thickness of each layer on green roof [ m ]
 #  Green roof structure: 4-layers
 #  1: Top Soil layer    2:Soil layer      3: Growing Medium layer     
-#  2: concrete roof (depth depends on DDZR defined earlier in this table)
+#  4: concrete roof (depth depends on DDZR defined earlier in this table)
 #      (sf_urban_physics=1)
 
 DZGR:  0.05 0.10 0.15 0.20
@@ -325,7 +325,7 @@ EPSG: 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95
 #      (sf_urban_physics=1)
 #
 
-Z0B: 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001 
+Z0B: 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01 
 
 
 #
@@ -334,7 +334,7 @@ Z0B: 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0
 #      (sf_urban_physics=1,2,3)
 #
 
-Z0G: 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01
+Z0G: 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1
 
 
 #

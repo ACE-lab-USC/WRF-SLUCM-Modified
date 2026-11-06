@@ -611,6 +611,8 @@ BENCH_START(surf_driver_tim)
 !     &        ,AH_istart=grid%i_start                 ,AH_jstart=grid%j_start       & !original from LUCY, but can't compile
 !     &        ,AH_iend=grid%i_end                     ,AH_jend=grid%j_end           & !original from LUCY, but can't compile
      &        ,AH_grid=grid%id                        ,AHFLUX=grid%AHFLUX           & 
+! LH input: persistent fraction and per-cell file cache.
+     &        ,LH_PROP=grid%LH_PROP, AH_FILE_INDEX=grid%AH_FILE_INDEX                &
 !--yun note: added by LUCY, end     
      &        ,HT=grid%ht              ,IFSNOW=config_flags%ifsnow      ,ISFFLX=config_flags%isfflx      &
      &        ,FRACTIONAL_SEAICE=config_flags%fractional_seaice           &
