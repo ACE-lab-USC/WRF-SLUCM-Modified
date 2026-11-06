@@ -1,9 +1,5 @@
 # WRF–SLUCM LCZ_LA Modified Code and Parameter Tables
 
-This repository provides the modified WRF source files and urban parameter table
-used in **Quantifying Urban Morphology-Induced Uncertainty in Urban Meteorology and Heat Stress Simulations in Southern California**, where we develop an
-LCZ-based urban morphology dataset for the Los Angeles region (LCZ_LA) and modified the code to output the intermediate variables.
-
 The code in this repository is intended to make the model configuration
 reproducible for reviewers and readers.
 
